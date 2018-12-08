@@ -15,15 +15,33 @@ public:
 
 };
 
+class infinite_solutions : public std::runtime_error {
+
+public:
+
+    infinite_solutions()
+        : std::runtime_error("Error: Matrix could not be solved because it has infinite number of solutions") { }
+
+};
+
+class no_solutions : public std::runtime_error {
+
+public:
+
+    no_solutions()
+        : std::runtime_error("Error: Matrix has no solutions.") { }
+};
+
+typedef std::vector<std::vector<double>> matrix_t;
 
 class Matrix {
 
-    std::vector<std::vector<double>> matrix;
+    matrix_t matrix;
 
 public:
 
     Matrix() { }
-    Matrix(const std::vector<std::vector<double>> & matrix) : matrix(matrix) { }
+    Matrix(const matrix_t & matrix) : matrix(matrix) { }
 
     void appendLine(const std::vector<double> & line) {
 
@@ -36,17 +54,47 @@ public:
 
     }
 
-    const std::vector<std::vector<double>> & getMatrix() const {
+    const matrix_t & getMatrix() const {
         return matrix;
+    }
+
+    size_t rows() const {
+        return matrix.size();
+    }
+
+    size_t columns() const {
+        
+        if (not rows()) {
+            return 0;
+        }
+
+        return matrix.front().size();
+
+    }
+
+    std::vector<double> & getLine(const size_t index) {
+        return matrix[index];
+    }
+
+    double & get(const size_t line, const size_t index) {
+        return matrix[line][index];
+    }
+
+    const std::vector<double> & getLine(const size_t index) const {
+        return matrix[index];
+    }
+
+    double get(const size_t line, const size_t index) const {
+        return matrix[line][index];
     }
 
     bool isSquare() const {
 
-        if (not matrix.size()) {
+        if (not rows()) {
             return false;
         }
 
-        return matrix.size() == matrix.front().size();
+        return rows() == columns();
 
     }
 
@@ -58,17 +106,21 @@ public:
 
         double result = 1;
 
-        for (size_t i = 0; i < matrix.size(); ++i) {
-            result *= matrix[i][i];
+        for (size_t i = 0; i < rows(); ++i) {
+            result *= get(i, i);
         }
 
         return result;
 
     }
 
+    bool isSolvable() const {
+        return rows() + 1 == columns();
+    }
+
 };
 
-void swapTwo(std::vector<std::vector<double>> & matrix, const size_t r1, const size_t r2) {
+void swapTwo(matrix_t & matrix, const size_t r1, const size_t r2) {
 
     const std::vector<double> v1 = matrix[r1];
     const std::vector<double> v2 = matrix[r2];
@@ -78,7 +130,7 @@ void swapTwo(std::vector<std::vector<double>> & matrix, const size_t r1, const s
 
 }
 
-void swap(std::vector<std::vector<double>> & matrix, const size_t pivot) {
+void swap(matrix_t & matrix, const size_t pivot) {
 
     if (matrix[pivot][pivot]) {
         return;
@@ -99,7 +151,7 @@ void swap(std::vector<std::vector<double>> & matrix, const size_t pivot) {
 
 }
 
-void reduce(std::vector<std::vector<double>> & matrix, const size_t pivot) {
+void reduce(matrix_t & matrix, const size_t pivot) {
 
     if (not matrix[pivot][pivot]) {
         return;
@@ -118,30 +170,53 @@ void reduce(std::vector<std::vector<double>> & matrix, const size_t pivot) {
 
 }
 
+bool isZeroOnly(const std::vector<double> & line) {
+
+    for (double d : line) {
+
+        if (d) {
+            return false;
+        }
+
+    }
+
+    return true;
+
+}
+
+matrix_t removeZeroOnly(const matrix_t & matrix) {
+
+    matrix_t res;
+
+    for (const std::vector<double> & line : matrix) {
+
+        if (not isZeroOnly(line)) {
+            res.emplace_back(line);
+        }
+
+    }
+
+    return res;
+
+}
+
 Matrix gauss(const Matrix & matrix) {
 
-    std::vector<std::vector<double>> m = matrix.getMatrix();
+    matrix_t m = matrix.getMatrix();
 
-    const size_t rows = m.size();
-    const size_t columns = m.front().size();
+    const size_t rowCount = matrix.rows();
+    const size_t columnCount = m.front().size();
 
-    for (size_t pivot = 0; pivot < rows - 1 and pivot < columns; ++pivot) {
+    for (size_t pivot = 0; pivot < rowCount - 1 and pivot < columnCount; ++pivot) {
 
         swap(m, pivot);
         reduce(m, pivot);
 
     }
 
+    m = removeZeroOnly(m);
+
     return Matrix(m);
-
-}
-
-bool isSolvable(const Matrix & matrix) {
-
-    const size_t rows = matrix.getMatrix().size();
-    const size_t columns = matrix.getMatrix().front().size();
-
-    return rows + 1 == columns;
 
 }
 
@@ -191,25 +266,30 @@ double solveLine(const std::vector<double> line, const double * solved, const si
         ++solutionsIter;
     }
 
+    if (not line[lineIter] and solution) {
+        throw no_solutions();
+    }
+    if (not (line[lineIter] or solution)) {
+        throw infinite_solutions();
+    }
+
     return solution / line[lineIter];
 
 }
 
 std::vector<double> solve(const Matrix & matrix) {
 
-    if (not isSolvable(matrix)) {
+    if (not matrix.isSolvable()) {
         throw std::runtime_error("");
     }
-
-    const std::vector<std::vector<double>> & m = matrix.getMatrix();
 
     size_t solutionsSize = 1;
     size_t solutionsCount = 0;
     double * solutions = new double[solutionsSize];
 
-    for (size_t i = m.size() - 1; i != (size_t)-1; --i) {
+    for (size_t i = matrix.rows() - 1; i != (size_t)-1; --i) {
 
-        solutions[solutionsCount] = solveLine(m[i], solutions, solutionsCount);
+        solutions[solutionsCount] = solveLine(matrix.getLine(i), solutions, solutionsCount);
 
         ++solutionsCount;
 
@@ -324,17 +404,17 @@ Matrix readMatrix(std::istream & is) {
 
 }
 
-void matrixFromStdin() {
+Matrix matrixFromStdin() {
 
     std::cout << "Input matrix (empty line denotes end of matrix): " << std::endl;
 
     Matrix matrix = readMatrix(std::cin);
 
-    std::cout << matrix;
+    return matrix;
 
 }
 
-void matrixFromFile(const std::string & filename) {
+Matrix matrixFromFile(const std::string & filename) {
 
     std::ifstream input(filename);
 
@@ -343,65 +423,128 @@ void matrixFromFile(const std::string & filename) {
     }
 
     Matrix matrix = readMatrix(input);
+
+    return matrix;
+    
+
+}
+
+void handleMatrix(const Matrix & matrix) {
+
     std::cout << "Input: " << std::endl;
     std::cout << matrix;
     Matrix transformed = gauss(matrix);
-    std::cout << "After gaussian elimination: " << std::endl;
+    std::cout << "\n" << "After gaussian elimination: " << std::endl;
     std::cout << transformed;
 
     if (transformed.isSquare()) {
-        std::cout <<"Determinant: " << transformed.determinant() << std::endl;
+        std::cout << "\n" << "Determinant: " << transformed.determinant() << std::endl;
     } else {
-        std::cout << "Determinant could not be determined for selected matrix." << std::endl;
+        std::cout << "\n" << "Determinant could not be determined for selected matrix." << std::endl;
     }
 
-    if (not isSolvable(transformed)) {
-        std::cout << "Matrix could not be solved" << std::endl;
+    if (not transformed.isSolvable()) {
+        std::cout << "\n" << "Matrix could not be solved" << std::endl;
     } else {
+
         try {
             const std::vector<double> solutions = solve(transformed);
+            std::endl(std::cout);
 
             for (size_t i = 0; i < solutions.size(); ++i) {
                 std::cout << "x" << (i + 1) << ": " << solutions[i] << std::endl;
             }
-        } catch (const std::exception & e) {
-            std::cout << e.what() << std::endl;
-        } 
+
+        } catch (const no_solutions & e) {
+            std::cout << "\n" << "Matrix has no solutions." << std::endl;
+        } catch (const infinite_solutions & e) {
+            std::cout << "\n" << "Matrix has infinite number of solutions." << std::endl;
+        }
+
     }
+
+    std::endl(std::cout);
 
 }
 
+Matrix menuFile() {
 
-int main(int argc, const char * argv[]) {
+    std::cout << "File: ";
+    std::string filename;
+    std::getline(std::cin, filename);
 
-    std::vector<std::string> args;
+    return matrixFromFile(filename);
 
-    matrixFromFile("matrix.txt");
-    return 0;
+}
 
-    for (int i = 1; i < argc; ++i) {
-        args.emplace_back(argv[i]);
-    }
+void menu() {
 
-    if (not args.size()) {
+    while (true) {
+        
+        std::cout << "  [1] Matrix from keyboard input [2] Matrix from file [3] Exit" << std::endl;
+
+        std::string input;
+        std::getline(std::cin, input);
+
+        if (input.size() != 1) {
+            continue;
+        }
+
+        if (not (input[0] == '1' or input[0] == '2' or input[0] == '3')) {
+            continue;
+        }
+
+        Matrix matrix;
 
         try {
-            matrixFromStdin();
+
+            switch (input[0]) {
+
+                case '1':
+                    matrix = matrixFromStdin();
+                    break;
+                case '2':
+                    matrix = menuFile();
+                    break;
+                case '3':
+                    return;
+                default:
+                    break;
+            }
+
         } catch (const std::exception & e) {
             std::cout << e.what() << std::endl;
+            continue;
         }
+
+        handleMatrix(matrix);
+    }
+}
+
+int fromArgs(const std::string & in, const std::string & out) {
+
+    try {
+        
+        Matrix input = matrixFromFile(in);
+        handleMatrix(input);
+
+    } catch (const std::exception & e) {
+
+        std::cout << e.what() << std::endl;
         return -1;
 
     }
 
-    for (const std::string & arg : args) {
+    return 0;
 
-        try {
-            matrixFromFile(arg);
-        } catch (const std::exception & e) {
-            std::cout << e.what() << std::endl;
-        }
+}
 
+int main(int argc, const char * argv[]) {
+
+    if (argc == 3) {
+        return fromArgs(argv[1], argv[2]);
     }
+
+    menu();
 
 }
