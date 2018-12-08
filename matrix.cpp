@@ -40,8 +40,30 @@ public:
         return matrix;
     }
 
+    bool isSquare() const {
+
+        if (not matrix.size()) {
+            return false;
+        }
+
+        return matrix.size() == matrix.front().size();
+
+    }
+
     double determinant() const {
-        return 0;
+        
+        if (not isSquare()) {
+            throw std::runtime_error("Error: attempting to compute determinant of a non-square matrix");
+        }
+
+        double result = 1;
+
+        for (size_t i = 0; i < matrix.size(); ++i) {
+            result *= matrix[i][i];
+        }
+
+        return result;
+
     }
 
 };
@@ -101,15 +123,9 @@ Matrix gauss(const Matrix & matrix) {
     std::vector<std::vector<double>> m = matrix.getMatrix();
 
     const size_t rows = m.size();
-    const size_t columns = m[0].size();
+    const size_t columns = m.front().size();
 
-    std::cout << "rows: " << rows << " columns: " << columns << std::endl;
-
-    if (rows + 1 != columns) {
-        throw std::runtime_error("Cannot perform gaussian method on current matrix");
-    }
-
-    for (size_t pivot = 0; pivot < rows - 1; ++pivot) {
+    for (size_t pivot = 0; pivot < rows - 1 and pivot < columns; ++pivot) {
 
         swap(m, pivot);
         reduce(m, pivot);
@@ -119,6 +135,96 @@ Matrix gauss(const Matrix & matrix) {
     return Matrix(m);
 
 }
+
+bool isSolvable(const Matrix & matrix) {
+
+    const size_t rows = matrix.getMatrix().size();
+    const size_t columns = matrix.getMatrix().front().size();
+
+    return rows + 1 == columns;
+
+}
+
+double * reallocate(double * arr, const size_t oldSize, const size_t newSize) {
+
+    double * newArr = new double[newSize];
+
+    for (size_t i = 0; i < oldSize; ++i) {
+        newArr[i] = arr[i];
+    }
+
+    delete[] arr;
+
+    return newArr;
+
+}
+
+std::vector<double> reverseAndConvert(const double * solved, const size_t sSize) {
+
+    std::vector<double> retval;
+
+    for (size_t i = sSize - 1;; --i) {
+
+        retval.emplace_back(solved[i]);
+
+        if (not i) {
+            break;
+        }
+
+    }
+
+    return retval;
+
+}
+
+double solveLine(const std::vector<double> line, const double * solved, const size_t sSize) {
+
+    size_t lineIter = line.size() - 1;
+    size_t solutionsIter = 0;
+
+    double solution = line[lineIter--];
+
+    while (solutionsIter < sSize) {
+        solution -= solved[solutionsIter] * line[lineIter];
+
+        --lineIter;
+        ++solutionsIter;
+    }
+
+    return solution / line[lineIter];
+
+}
+
+std::vector<double> solve(const Matrix & matrix) {
+
+    if (not isSolvable(matrix)) {
+        throw std::runtime_error("");
+    }
+
+    const std::vector<std::vector<double>> & m = matrix.getMatrix();
+
+    size_t solutionsSize = 1;
+    size_t solutionsCount = 0;
+    double * solutions = new double[solutionsSize];
+
+    for (size_t i = m.size() - 1; i != (size_t)-1; --i) {
+
+        solutions[solutionsCount] = solveLine(m[i], solutions, solutionsCount);
+
+        ++solutionsCount;
+
+        if (solutionsCount == solutionsSize) {
+            solutions = reallocate(solutions, solutionsSize, solutionsSize * 2);
+            solutionsSize <<= 1;
+        }
+
+    }
+
+    std::vector<double> retval = reverseAndConvert(solutions, solutionsCount);
+    delete[] solutions;
+    return retval;
+
+} 
 
 std::ostream & operator<<(std::ostream & os, const Matrix & matrix) {
 
@@ -237,9 +343,31 @@ void matrixFromFile(const std::string & filename) {
     }
 
     Matrix matrix = readMatrix(input);
+    std::cout << "Input: " << std::endl;
     std::cout << matrix;
     Matrix transformed = gauss(matrix);
+    std::cout << "After gaussian elimination: " << std::endl;
     std::cout << transformed;
+
+    if (transformed.isSquare()) {
+        std::cout <<"Determinant: " << transformed.determinant() << std::endl;
+    } else {
+        std::cout << "Determinant could not be determined for selected matrix." << std::endl;
+    }
+
+    if (not isSolvable(transformed)) {
+        std::cout << "Matrix could not be solved" << std::endl;
+    } else {
+        try {
+            const std::vector<double> solutions = solve(transformed);
+
+            for (size_t i = 0; i < solutions.size(); ++i) {
+                std::cout << "x" << (i + 1) << ": " << solutions[i] << std::endl;
+            }
+        } catch (const std::exception & e) {
+            std::cout << e.what() << std::endl;
+        } 
+    }
 
 }
 
