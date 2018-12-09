@@ -1,2 +1,2 @@
 # VSB-Matrix
-VŠB - Matrix (Gauss elimination etc...)
+VŠB - Matrix (Gaussian elimination etc...)
