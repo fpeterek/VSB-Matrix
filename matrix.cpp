@@ -429,10 +429,58 @@ Matrix matrixFromFile(const std::string & filename) {
 
 }
 
+void writeMatrix(std::ofstream & os, const Matrix & matrix) {
+
+    std::cout << matrix;
+
+    os << "<table>\n";
+
+    const matrix_t & innerMatrix = matrix.getMatrix();
+
+    for (const auto & line : innerMatrix) {
+
+        os << "<tr>";
+
+        for (const double d : line) {
+            os << "<td>" << d << "</td>";
+        }
+
+        os << "</tr>";
+    }
+
+    os << "</table>" << std::endl;
+
+}
+
+void writeSection(std::ofstream & os, const std::string & sectionName, 
+                  const std::function<void(const Matrix&)> function, const Matrix & matrix) {
+
+    std::cout << sectionName << ":" << std::endl;
+
+    os << "<p>\n";
+    os << "<h2>" << sectionName << "</h2>\n";
+
+    function(os, matrix);
+
+    os << "<hr>\n";
+    os << "</p>" << std::endl;
+
+}
+
 void handleMatrix(const Matrix & matrix) {
 
-    std::cout << "Input: " << std::endl;
-    std::cout << matrix;
+    std::cout << "Output file: ";
+    std::string file;
+    std::cin >> file;
+
+    std::ofstream os(file);
+
+    if (not os) {
+        throw std::runtime_error("Error: Output file \"" + "\" could not be opened.");
+    }
+
+    writeSection(os, "Input", writeMatrix, matrix);
+
     Matrix transformed = gauss(matrix);
     std::cout << "\n" << "After gaussian elimination: " << std::endl;
     std::cout << transformed;
