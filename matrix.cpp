@@ -515,9 +515,7 @@ void writeSection(std::ofstream & os, const std::string & sectionName,
 void writeHeader(std::ofstream & os) {
 
     os << "<head>\n";
-
     os << "<title>Matrix</title>\n";
-
     os << "</head>\n";
 
 }
@@ -578,7 +576,7 @@ std::string getOFile() {
 
     std::cout << "Output file: ";
     std::string file;
-    std::cin >> file;
+    std::getline(std::cin, file);
 
     return file;
 
@@ -588,12 +586,12 @@ void menu() {
 
     while (true) {
         
-        std::cout << "  [1] Matrix from keyboard input [2] Matrix from file [3] Exit" << std::endl;
-
+        std::cout << "[1] Matrix from keyboard input [2] Matrix from file [3] Exit" << std::endl;
         std::string input;
         std::getline(std::cin, input);
 
         if (not menuInputIsValid(input)) {
+            std::cout << "invalid input '" << input << "'" << std::endl;
             continue;
         }
 
