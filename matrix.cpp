@@ -289,14 +289,14 @@ std::vector<double> solve(const Matrix & matrix) {
 
     for (size_t i = matrix.rows() - 1; i != (size_t)-1; --i) {
 
-        solutions[solutionsCount] = solveLine(matrix.getLine(i), solutions, solutionsCount);
-
-        ++solutionsCount;
-
         if (solutionsCount == solutionsSize) {
             solutions = reallocate(solutions, solutionsSize, solutionsSize * 2);
             solutionsSize <<= 1;
         }
+
+        solutions[solutionsCount] = solveLine(matrix.getLine(i), solutions, solutionsCount);
+
+        ++solutionsCount;
 
     }
 
@@ -448,12 +448,56 @@ void writeMatrix(std::ofstream & os, const Matrix & matrix) {
         os << "</tr>";
     }
 
-    os << "</table>" << std::endl;
+    os << "</table>" << std::endl;
 
 }
 
-void writeSection(std::ofstream & os, const std::string & sectionName, 
-                  const std::function<void(const Matrix&)> function, const Matrix & matrix) {
+void writeDeterminant(std::ofstream & os, const Matrix & matrix) {
+
+    if (matrix.isSquare()) {
+
+        std::cout << "\n" << "Determinant of current matrix is " << matrix.determinant() << std::endl;
+        os << "Determinant: " << matrix.determinant() << std::endl;
+
+    } else {
+
+        std::cout << "\n" << "Determinant could not be determined for current matrix." << std::endl;
+        os << "Determinant could not be determined for current matrix." << std::endl;
+    }
+
+}
+
+void writeSolution(std::ofstream & os, const Matrix & matrix) {
+
+    if (not matrix.isSolvable()) {
+        std::cout << "\n" << "Matrix could not be solved" << std::endl;
+        os << "Matrix could not be solved." << std::endl;
+    } else {
+
+        try {
+            const std::vector<double> solutions = solve(matrix);
+            std::endl(std::cout);
+
+            for (size_t i = 0; i < solutions.size(); ++i) {
+                std::cout << "x" << (i + 1) << ": " << solutions[i] << std::endl;
+                os << "x" << (i + 1) << ": " << solutions[i] << "<br>\n";
+            }
+
+        } catch (const no_solutions & e) {
+            std::cout << "\n" << "Matrix has no solutions." << std::endl;
+            os << "Matrix has no solutions." << std::endl;
+        } catch (const infinite_solutions & e) {
+            std::cout << "\n" << "Matrix has infinite number of solutions." << std::endl;
+            os << "Matrix has infinite number of solutions." << std::endl;
+        }
+
+    }
+
+}
+
+void writeSection(std::ofstream & os, const std::string & sectionName, 
+                  const std::function<void(std::ofstream & os, const Matrix&)> function, 
+                  const Matrix & matrix) {
 
     std::cout << sectionName << ":" << std::endl;
 
@@ -462,56 +506,47 @@ void writeSection(std::ofstream & os, const std::string & sectionName,
 
     function(os, matrix);
 
-    os << "<hr>\n";
-    os << "</p>" << std::endl;
+    os << "</p>\n";
+    os << "<hr>" << std::endl;
+    
 
 }
 
-void handleMatrix(const Matrix & matrix) {
+void writeHeader(std::ofstream & os) {
 
-    std::cout << "Output file: ";
-    std::string file;
-    std::cin >> file;
+    os << "<head>\n";
+
+    os << "<title>Matrix</title>\n";
+
+    os << "</head>\n";
+
+}
+
+void handleMatrix(const Matrix & matrix, const std::string & file) {
 
     std::ofstream os(file);
 
     if (not os) {
-        throw std::runtime_error("Error: Output file \"" + "\" could not be opened.");
+        throw std::runtime_error("Error: Output file \"" + file + "\" could not be opened.");
     }
 
-    writeSection(os, "Input", writeMatrix, matrix);
+    os << "<html>\n";
+
+    writeHeader(os);
 
     Matrix transformed = gauss(matrix);
-    std::cout << "\n" << "After gaussian elimination: " << std::endl;
-    std::cout << transformed;
 
-    if (transformed.isSquare()) {
-        std::cout << "\n" << "Determinant: " << transformed.determinant() << std::endl;
-    } else {
-        std::cout << "\n" << "Determinant could not be determined for selected matrix." << std::endl;
-    }
+    os << "<body>\n";
+    writeSection(os, "Input", writeMatrix, matrix);    
+    writeSection(os, "Gaussian elimination", writeMatrix, transformed);
+    writeSection(os, "Determinant", writeDeterminant, transformed);
+    writeSection(os, "Solution", writeSolution, transformed);
+    os << "</body>\n";
 
-    if (not transformed.isSolvable()) {
-        std::cout << "\n" << "Matrix could not be solved" << std::endl;
-    } else {
-
-        try {
-            const std::vector<double> solutions = solve(transformed);
-            std::endl(std::cout);
-
-            for (size_t i = 0; i < solutions.size(); ++i) {
-                std::cout << "x" << (i + 1) << ": " << solutions[i] << std::endl;
-            }
-
-        } catch (const no_solutions & e) {
-            std::cout << "\n" << "Matrix has no solutions." << std::endl;
-        } catch (const infinite_solutions & e) {
-            std::cout << "\n" << "Matrix has infinite number of solutions." << std::endl;
-        }
-
-    }
+    os << "</html>";
 
     std::endl(std::cout);
+    std::endl(os);
 
 }
 
@@ -525,6 +560,30 @@ Matrix menuFile() {
 
 }
 
+bool menuInputIsValid(const std::string & input) {
+
+    if (input.size() != 1) {
+        return false;
+    }
+
+    if (input[0] != '1' and input[0] != '2' and input[0] != '3') {
+        return false;
+    }
+
+    return true;
+
+}
+
+std::string getOFile() {
+
+    std::cout << "Output file: ";
+    std::string file;
+    std::cin >> file;
+
+    return file;
+
+}
+
 void menu() {
 
     while (true) {
@@ -534,11 +593,7 @@ void menu() {
         std::string input;
         std::getline(std::cin, input);
 
-        if (input.size() != 1) {
-            continue;
-        }
-
-        if (not (input[0] == '1' or input[0] == '2' or input[0] == '3')) {
+        if (not menuInputIsValid(input)) {
             continue;
         }
 
@@ -547,7 +602,6 @@ void menu() {
         try {
 
             switch (input[0]) {
-
                 case '1':
                     matrix = matrixFromStdin();
                     break;
@@ -565,7 +619,7 @@ void menu() {
             continue;
         }
 
-        handleMatrix(matrix);
+        handleMatrix(matrix, getOFile());
     }
 }
 
@@ -574,7 +628,7 @@ int fromArgs(const std::string & in, const std::string & out) {
     try {
         
         Matrix input = matrixFromFile(in);
-        handleMatrix(input);
+        handleMatrix(input, out);
 
     } catch (const std::exception & e) {
 
