@@ -591,7 +591,6 @@ void menu() {
         std::getline(std::cin, input);
 
         if (not menuInputIsValid(input)) {
-            std::cout << "invalid input '" << input << "'" << std::endl;
             continue;
         }
 
