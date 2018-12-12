@@ -1,3 +1,13 @@
+/**
+* @file matrix.cpp
+* @brief This file includes all classes and functions required to 
+*  perform gaussian elimination on matrices, calculate their determinant
+*  and solve them
+*
+* @author Filip Peterek
+* @date 12/12/2018
+*/
+
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -6,6 +16,9 @@
 #include <functional>
 
 
+/** 
+* @brief Exception thrown when invalid input is received
+*/
 class invalid_input : public std::runtime_error {
 
 public:
@@ -15,6 +28,11 @@ public:
 
 };
 
+
+/** 
+* @brief Exception thrown if matrix cannot be solved because it has
+*  an infinite amount of solutions
+*/
 class infinite_solutions : public std::runtime_error {
 
 public:
@@ -24,6 +42,10 @@ public:
 
 };
 
+/** 
+* @brief Exception thrown if matrix cannot be solved because it has
+*  no solutions
+*/
 class no_solutions : public std::runtime_error {
 
 public:
@@ -32,17 +54,30 @@ public:
         : std::runtime_error("Error: Matrix has no solutions.") { }
 };
 
+/** 
+* @brief Raw matrix collection
+*/
 typedef std::vector<std::vector<double>> matrix_t;
 
+/** 
+* @brief Matrix class. Holds raw matrix using matrix_t. Provides additional
+*  information about matrix.
+*/
 class Matrix {
 
-    matrix_t matrix;
+    matrix_t matrix; /**< Raw matrix */
 
 public:
 
+    /** @brief Default constructor */
     Matrix() { }
+    /** @brief Copy constructor */
     Matrix(const matrix_t & matrix) : matrix(matrix) { }
 
+    /** 
+    * @brief Appends a line to the end of matrix if line size matches the rest of the matrix 
+    * @param line Line to be appended
+    */
     void appendLine(const std::vector<double> & line) {
 
         if (matrix.size() and matrix[0].size() != line.size()) {
@@ -54,14 +89,17 @@ public:
 
     }
 
+    /** @brief Get underlying raw matrix */
     const matrix_t & getMatrix() const {
         return matrix;
     }
 
+    /** @brief Get number of rows in matrix */
     size_t rows() const {
         return matrix.size();
     }
 
+    /** @brief Get number of columns in matrix */
     size_t columns() const {
         
         if (not rows()) {
@@ -72,22 +110,45 @@ public:
 
     }
 
+    /** 
+    * @brief Get a single line from matrix 
+    * @param index Line index 
+    * @return Reference to a single line
+    */
     std::vector<double> & getLine(const size_t index) {
         return matrix[index];
     }
 
+    /** 
+    * @brief Get a single element from matrix 
+    * @param line Line index
+    * @param index Element index 
+    * @return Reference to a single element
+    */
     double & get(const size_t line, const size_t index) {
         return matrix[line][index];
     }
 
+    /** 
+    * @brief Get a single line from matrix 
+    * @param index Line index 
+    * @return Const reference to a single line
+    */
     const std::vector<double> & getLine(const size_t index) const {
         return matrix[index];
     }
 
+    /** 
+    * @brief Get a single element from matrix 
+    * @param line Line index
+    * @param index Element index 
+    * @return Copy of a single element
+    */
     double get(const size_t line, const size_t index) const {
         return matrix[line][index];
     }
 
+    /** @brief Checks whether matrix is a square (number of rows == number of columns) */
     bool isSquare() const {
 
         if (not rows()) {
@@ -98,6 +159,8 @@ public:
 
     }
 
+    /** @brief Calculates the determinant of a square matrix after 
+    *    gaussian elimination has been performed */
     double determinant() const {
         
         if (not isSquare()) {
@@ -114,12 +177,19 @@ public:
 
     }
 
+    /** @brief Checks whether matrix can be solved */
     bool isSolvable() const {
         return rows() + 1 == columns();
     }
 
 };
 
+/**
+* @brief Swaps two rows of a matrix
+* @param matrix Raw matrix
+* @param r1 Index of first row to be swapped
+* @param r2 Index of second row to be swapped
+*/
 void swapTwo(matrix_t & matrix, const size_t r1, const size_t r2) {
 
     const std::vector<double> v1 = matrix[r1];
@@ -130,6 +200,11 @@ void swapTwo(matrix_t & matrix, const size_t r1, const size_t r2) {
 
 }
 
+/**
+* @brief Attempts to swap rows in matrix if pivot is zero
+* @param matrix Raw matrix
+* @param pivot Pivot index
+*/
 void swap(matrix_t & matrix, const size_t pivot) {
 
     if (matrix[pivot][pivot]) {
@@ -151,6 +226,11 @@ void swap(matrix_t & matrix, const size_t pivot) {
 
 }
 
+/**
+* @brief Performs subtraction between lines to reduce all elements underneath pivot to zero
+* @param matrix Raw matrix
+* @param pivot Pivot index
+*/
 void reduce(matrix_t & matrix, const size_t pivot) {
 
     if (not matrix[pivot][pivot]) {
@@ -170,6 +250,10 @@ void reduce(matrix_t & matrix, const size_t pivot) {
 
 }
 
+/**
+* @brief Checks whether line consists of only zeroes
+* @param line Line to be checked
+*/
 bool isZeroOnly(const std::vector<double> & line) {
 
     for (double d : line) {
@@ -184,6 +268,11 @@ bool isZeroOnly(const std::vector<double> & line) {
 
 }
 
+/**
+* @brief Removes zero only lines from matrix
+* @param matrix Matrix to have zero only lines removed
+* @return Matrix of type matrix_t without any zero only lines
+*/
 matrix_t removeZeroOnly(const matrix_t & matrix) {
 
     matrix_t res;
@@ -200,6 +289,11 @@ matrix_t removeZeroOnly(const matrix_t & matrix) {
 
 }
 
+/**
+* @brief Performs gaussian elimination on a matrix
+* @param matrix Matrix to be transformed
+* @return New matrix, which has been transformed using gaussian elimination
+*/
 Matrix gauss(const Matrix & matrix) {
 
     matrix_t m = matrix.getMatrix();
@@ -220,6 +314,13 @@ Matrix gauss(const Matrix & matrix) {
 
 }
 
+/**
+* @brief Reallocates an array of doubles
+* @param arr Old array
+* @param oldSize Current size of array
+* @param newSize Desired size
+* @return Reallocated array
+*/
 double * reallocate(double * arr, const size_t oldSize, const size_t newSize) {
 
     double * newArr = new double[newSize];
@@ -234,6 +335,13 @@ double * reallocate(double * arr, const size_t oldSize, const size_t newSize) {
 
 }
 
+/**
+* @brief Solutions are stored in a reverse order. This function orders solutions
+*  properly and stores them in an std::vector rather than a C array
+* @param solved C array of solutions
+* @param sSize Size of solved
+* @return std::vector with it's elements in proper order
+*/
 std::vector<double> reverseAndConvert(const double * solved, const size_t sSize) {
 
     std::vector<double> retval;
@@ -252,6 +360,14 @@ std::vector<double> reverseAndConvert(const double * solved, const size_t sSize)
 
 }
 
+/**
+* @brief Solves a single line and finds a solution to an equation using solutions
+*  to previous equations
+* @param line Line to be solved
+* @param solved C array of previous solutions
+* @param sSize Size of solved
+* @return Solution to current line
+*/
 double solveLine(const std::vector<double> line, const double * solved, const size_t sSize) {
 
     size_t lineIter = line.size() - 1;
@@ -277,6 +393,11 @@ double solveLine(const std::vector<double> line, const double * solved, const si
 
 }
 
+/**
+* @brief Solves a matrix
+* @param matrix Matrix to be solved
+* @return Vector of solutions
+*/
 std::vector<double> solve(const Matrix & matrix) {
 
     if (not matrix.isSolvable()) {
@@ -306,6 +427,10 @@ std::vector<double> solve(const Matrix & matrix) {
 
 } 
 
+/**
+* @brief Overload for std::ostream::operator<< which allows writing matrices
+*  right into ostreams
+*/
 std::ostream & operator<<(std::ostream & os, const Matrix & matrix) {
 
     for (const auto vector : matrix.getMatrix()) {
@@ -319,13 +444,18 @@ std::ostream & operator<<(std::ostream & os, const Matrix & matrix) {
 
 }
 
+/**
+* @brief Checks if line is a valid matrix definition. Throws invalid_input
+*  if not.
+* @param line Line to be checked
+*/
 void checkLineIsValid(const std::string & line) {
 
     bool dashAllowed = true;
 
     for (const char c : line) {
 
-        if (c == '-' and dashAllowed) {
+        if ((c == '-' and dashAllowed) or isdigit(c))  {
             dashAllowed = false;
             continue;
         }
@@ -335,14 +465,16 @@ void checkLineIsValid(const std::string & line) {
             continue;
         }
 
-        if (not isdigit(c)) {
-            throw invalid_input(line);
-        }
-
+        throw invalid_input(line);
     }
 
 }
 
+/**
+* @brief Parses a line containing a matrix row definition
+* @param line Line to be checked
+* @return An std::vector of doubles which represents a single line
+*/
 std::vector<double> parseLine(const std::string & line) {
 
     checkLineIsValid(line);
