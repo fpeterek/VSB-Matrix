@@ -123,7 +123,7 @@ public:
     * @brief Get a single element from matrix 
     * @param line Line index
     * @param index Element index 
-    * @return Reference to a single element
+    * @return Reference to a single element
     */
     double & get(const size_t line, const size_t index) {
         return matrix[line][index];
@@ -142,7 +142,7 @@ public:
     * @brief Get a single element from matrix 
     * @param line Line index
     * @param index Element index 
-    * @return Copy of a single element
+    * @return Copy of a single element
     */
     double get(const size_t line, const size_t index) const {
         return matrix[line][index];
@@ -503,6 +503,11 @@ std::vector<double> parseLine(const std::string & line) {
 
 }
 
+
+/**
+* @brief Checks whether string consists only of whitespace characters
+* @param str String to be checked
+*/
 bool isWSOnly(const std::string & str) {
 
     for (const char c : str) {
@@ -515,6 +520,10 @@ bool isWSOnly(const std::string & str) {
 
 }
 
+/**
+* @brief Reads a matrix object from selected stream
+* @param is Input stream from which the matrix is read
+*/
 Matrix readMatrix(std::istream & is) {
 
     Matrix matrix;
@@ -536,6 +545,9 @@ Matrix readMatrix(std::istream & is) {
 
 }
 
+/**
+* @brief Reads a matrix from stdin
+*/
 Matrix matrixFromStdin() {
 
     std::cout << "Input matrix (empty line denotes end of matrix): " << std::endl;
@@ -546,6 +558,10 @@ Matrix matrixFromStdin() {
 
 }
 
+/**
+* @brief Reads a matrix from a file
+* @param filename File containing a matrix 
+*/
 Matrix matrixFromFile(const std::string & filename) {
 
     std::ifstream input(filename);
@@ -561,6 +577,11 @@ Matrix matrixFromFile(const std::string & filename) {
 
 }
 
+/**
+* @brief Writes a matrix both to stdout and a specified ostream as an html table
+* @param os Output stream to an html file
+* @param matrix Matrix to be written 
+*/
 void writeMatrix(std::ofstream & os, const Matrix & matrix) {
 
     std::cout << matrix;
@@ -584,6 +605,11 @@ void writeMatrix(std::ofstream & os, const Matrix & matrix) {
 
 }
 
+/**
+* @brief Writes determinant of a matrix to both stdout and an ostream as an html element
+* @param os Output stream to an html file
+* @param matrix Matrix after gaussian elimination application
+*/
 void writeDeterminant(std::ofstream & os, const Matrix & matrix) {
 
     if (matrix.isSquare()) {
@@ -599,6 +625,11 @@ void writeDeterminant(std::ofstream & os, const Matrix & matrix) {
 
 }
 
+/**
+* @brief Writes the solution to a matrix to both stdout and an ostream as an html element
+* @param os Output stream to an html file
+* @param matrix Matrix after gaussian elimination application
+*/
 void writeSolution(std::ofstream & os, const Matrix & matrix) {
 
     if (not matrix.isSolvable()) {
@@ -627,6 +658,13 @@ void writeSolution(std::ofstream & os, const Matrix & matrix) {
 
 }
 
+/**
+* @brief Writes a section to both stdout and an ostream as an html element
+* @param os Output stream to an html file
+* @param sectionName Name of section, used as a heading in html file
+* @param function Function which handles desired functionality (eg. determinant, solutions, etc...)
+* @param matrix Matrix object passed to function
+*/
 void writeSection(std::ofstream & os, const std::string & sectionName, 
                   const std::function<void(std::ofstream & os, const Matrix&)> function, 
                   const Matrix & matrix) {
@@ -644,6 +682,10 @@ void writeSection(std::ofstream & os, const std::string & sectionName,
 
 }
 
+/**
+* @brief Writes an html header to an output stream
+* @param os Output stream to an html file
+*/
 void writeHeader(std::ofstream & os) {
 
     os << "<head>\n";
@@ -652,6 +694,11 @@ void writeHeader(std::ofstream & os) {
 
 }
 
+/**
+* @brief Performs calculations on selected matrix and writes the results to both a file and stdout
+* @param matrix Matrix on which calculations should be performed
+* @param file Output file
+*/
 void handleMatrix(const Matrix & matrix, const std::string & file) {
 
     std::ofstream os(file);
@@ -680,6 +727,10 @@ void handleMatrix(const Matrix & matrix, const std::string & file) {
 
 }
 
+/**
+* @brief Asks for a file containing a matrix definition and returns the matrix as a Matrix object
+* @return Matrix object parsed from file
+*/
 Matrix menuFile() {
 
     std::cout << "File: ";
@@ -690,6 +741,10 @@ Matrix menuFile() {
 
 }
 
+/**
+* @brief Checks if input is a valid menu option
+* @param input Input from user
+*/
 bool menuInputIsValid(const std::string & input) {
 
     if (input.size() != 1) {
@@ -704,6 +759,10 @@ bool menuInputIsValid(const std::string & input) {
 
 }
 
+/**
+* @brief Asks for name of output file
+* @return Returs name of output file specified by user
+*/
 std::string getOFile() {
 
     std::cout << "Output file: ";
@@ -714,6 +773,9 @@ std::string getOFile() {
 
 }
 
+/**
+* @brief Displays a menu and handles user input
+*/
 void menu() {
 
     while (true) {
@@ -752,6 +814,12 @@ void menu() {
     }
 }
 
+/**
+* @brief Reads matrix from a file and writes it to html file specified using command line arguments
+* @param in Input file passed as a command line argument
+* @param out Output file passed as a command line argument
+* @return Returns -1 on failure and 0 on success
+*/
 int fromArgs(const std::string & in, const std::string & out) {
 
     try {
@@ -770,6 +838,10 @@ int fromArgs(const std::string & in, const std::string & out) {
 
 }
 
+/**
+* @brief Calls fromArgs() if exactly two command line arguments were passed to the programs,
+*  otherwise calls menu()
+*/
 int main(int argc, const char * argv[]) {
 
     if (argc == 3) {
@@ -779,3 +851,5 @@ int main(int argc, const char * argv[]) {
     menu();
 
 }
+
+
