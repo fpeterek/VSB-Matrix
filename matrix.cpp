@@ -415,7 +415,15 @@ std::vector<double> solve(const Matrix & matrix) {
             solutionsSize <<= 1;
         }
 
-        solutions[solutionsCount] = solveLine(matrix.getLine(i), solutions, solutionsCount);
+        try {
+            solutions[solutionsCount] = solveLine(matrix.getLine(i), solutions, solutionsCount);
+        } catch (const infinite_solutions & e) {
+            delete[] solutions;
+            throw e;
+        } catch (const no_solutions & e) {
+            delete[] solutions;
+            throw e;
+        }
 
         ++solutionsCount;
 
@@ -851,5 +859,3 @@ int main(int argc, const char * argv[]) {
     menu();
 
 }
-
-
